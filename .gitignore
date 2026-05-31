@@ -1,0 +1,26 @@
+node_modules/
+dist/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.auth/
+
+# env files (keep .env.example)
+.env
+.env.local
+.env.dev
+.env.uat
+.env.buat
+*.env.local
+
+# logs
+*.log
+npm-debug.log*
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

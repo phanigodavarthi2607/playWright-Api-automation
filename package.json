@@ -1,0 +1,41 @@
+{
+  "name": "playwright-api-automation",
+  "version": "1.0.0",
+  "description": "Playwright API automation framework (JavaScript) with multi-env support (DEV/UAT/BUAT), SM_SESSION auth, baseline (snapshot) comparison, and Databricks/Snowflake response validation.",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:dev": "cross-env TEST_ENV=dev playwright test",
+    "test:uat": "cross-env TEST_ENV=uat playwright test",
+    "test:buat": "cross-env TEST_ENV=buat playwright test",
+    "test:baseline": "cross-env TEST_ENV=dev playwright test --grep @baseline",
+    "test:db": "cross-env TEST_ENV=dev playwright test --grep @db",
+    "baseline:update": "cross-env TEST_ENV=dev UPDATE_BASELINES=true playwright test --grep @baseline",
+    "report": "playwright show-report",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "playwright",
+    "api",
+    "automation",
+    "baseline",
+    "snapshot",
+    "databricks",
+    "snowflake"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.0"
+  },
+  "dependencies": {
+    "ajv": "^8.13.0",
+    "ajv-formats": "^3.0.1"
+  },
+  "optionalDependencies": {
+    "@databricks/sql": "^1.8.4",
+    "snowflake-sdk": "^1.11.0"
+  }
+}
