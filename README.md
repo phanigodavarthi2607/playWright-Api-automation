@@ -15,6 +15,11 @@ It supports:
 
 No TypeScript, no build step. Run `npm test` and you're going.
 
+> **New to this framework?** Start with [`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md) — a zero-to-running onboarding walkthrough that explains *why* each step exists. See also:
+> - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — file-by-file map of the engine
+> - [`docs/CI_INTEGRATION.md`](docs/CI_INTEGRATION.md) — Jenkins / GitLab CI / GitHub Actions pipelines
+> - `bash scripts/setup.sh` — one-shot onboarding helper
+
 ---
 
 ## 1. Project layout
