@@ -8,6 +8,9 @@ blob-report/
 playwright/.cache/
 .auth/
 
+# Cucumber
+cucumber-report/
+
 # env files (keep .env.example)
 .env
 .env.local
