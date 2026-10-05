@@ -1,12 +1,12 @@
 import winston from 'winston';
-import config from './config.js';
+import config, { ENV } from './config.js';
 
 const { combine, timestamp, printf, colorize } = winston.format;
 
 const logFormat = printf(({ level, message, timestamp, agent, ...meta }) => {
   const agentTag = agent ? `[${agent}]` : '';
   const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
-  return `${timestamp} ${level} ${agentTag} ${message}${metaStr}`;
+  return `${timestamp} ${level} [${ENV}] ${agentTag} ${message}${metaStr}`;
 });
 
 const logger = winston.createLogger({
@@ -17,7 +17,7 @@ const logger = winston.createLogger({
       format: combine(colorize(), timestamp({ format: 'HH:mm:ss' }), logFormat),
     }),
     new winston.transports.File({
-      filename: 'reports/agent.log',
+      filename: `${config.paths.reports}/agent.log`,
       maxsize: 5_242_880,
       maxFiles: 5,
     }),

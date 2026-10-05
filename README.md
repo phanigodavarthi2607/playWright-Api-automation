@@ -2,12 +2,14 @@
 
 An AI agent-driven test automation framework built on Playwright. Seven specialized agents coordinate through a central orchestrator to deliver end-to-end test automation from Jira stories to executed tests with auto-healing capabilities.
 
+Supports **multiple environments** (dev, UAT, BUAT, prod) with per-environment configuration, reporting, and tuned agent behavior.
+
 ## Architecture
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │                    ORCHESTRATOR                         │
-│           Coordinates the full pipeline                 │
+│         Coordinates the full pipeline per env           │
 └────┬──────┬──────┬──────┬──────┬──────┬──────┬────────┘
      │      │      │      │      │      │      │
      ▼      ▼      ▼      ▼      ▼      ▼      ▼
@@ -45,35 +47,110 @@ npm install
 npx playwright install
 ```
 
-### 2. Configure environment
+### 2. Configure environments
 
 ```bash
-cp .env.example .env
-# Edit .env with your Jira, Snowflake, Databricks, and app credentials
+# Copy the example files for each environment you need:
+cp .env.dev.example  .env.dev
+cp .env.uat.example  .env.uat
+cp .env.buat.example .env.buat
+cp .env.prod.example .env.prod
+
+# Edit each file with environment-specific credentials and URLs
 ```
 
-### 3. Run the full pipeline
+### 3. Run tests against an environment
 
 ```bash
-# Full pipeline: Jira -> Generate -> Execute -> Analyze -> Heal -> Report
-npm run orchestrate
+# Run all tests against a specific environment
+npm run test:dev
+npm run test:uat
+npm run test:buat
+npm run test:prod
 
-# Single story
-node src/agents/orchestrator.js story PROJ-123
-
-# Heal and re-run
-node src/agents/orchestrator.js heal
+# Or set TEST_ENV inline
+TEST_ENV=uat npx playwright test
 ```
 
-### 4. Run tests directly
+### 4. Run the full pipeline per environment
 
 ```bash
-npm test                    # All tests
-npm run test:ui             # UI tests only
-npm run test:api            # API tests only
-npm run test:data           # Data tests only
-npm run test:generated      # Auto-generated tests
-npm run test:headed         # Run with visible browser
+npm run orchestrate:dev     # Full pipeline against dev
+npm run orchestrate:uat     # Full pipeline against UAT
+npm run orchestrate:buat    # Full pipeline against BUAT
+npm run orchestrate:prod    # Full pipeline against prod
+```
+
+## Multi-Environment Support
+
+### How it works
+
+Set the `TEST_ENV` variable to select an environment. The framework:
+
+1. Loads `.env.{TEST_ENV}` (e.g., `.env.uat`), falling back to `.env` if the file is missing.
+2. Applies per-environment defaults for log level, retries, workers, timeouts, and agent thresholds.
+3. Writes reports to a per-environment subdirectory (`reports/uat/`, `reports/prod/`, etc.).
+4. Includes the environment name in every log line and in Playwright report metadata.
+
+### Environment-specific defaults
+
+| Setting | dev | uat | buat | prod |
+|---------|-----|-----|------|------|
+| Log level | debug | info | info | warn |
+| Playwright retries | 1 | 2 | 2 | 0 |
+| Playwright workers | auto | 2 | 2 | 1 |
+| Test timeout | 60s | 90s | 90s | 120s |
+| Heal attempts | 3 | 3 | 3 | 1 |
+| Locator similarity threshold | 0.7 | 0.7 | 0.7 | 0.9 |
+| Trace capture | on-first-retry | on-first-retry | on-first-retry | off |
+| Video capture | retain-on-failure | retain-on-failure | retain-on-failure | off |
+
+Any of these can be overridden per-environment in the `.env.{env}` file.
+
+### Per-environment npm scripts
+
+```bash
+# Test suites
+npm run test:dev            # All tests against dev
+npm run test:uat:ui         # UI tests against UAT
+npm run test:buat:api       # API tests against BUAT
+npm run test:prod:data      # Data tests against prod
+
+# Orchestration pipeline
+npm run orchestrate:dev
+npm run orchestrate:uat
+npm run orchestrate:buat
+npm run orchestrate:prod
+```
+
+### Reports
+
+Reports are separated by environment:
+
+```
+reports/
+  dev/
+    results.json
+    html/
+    agent.log
+  uat/
+    results.json
+    html/
+    agent.log
+  prod/
+    ...
+```
+
+### CI Example
+
+```yaml
+jobs:
+  test:
+    strategy:
+      matrix:
+        env: [dev, uat, buat]
+    steps:
+      - run: TEST_ENV=${{ matrix.env }} npm test
 ```
 
 ## Pipeline Workflow
@@ -109,8 +186,8 @@ The orchestrator runs this sequence:
 │   │   ├── databricks-connector.js      # Databricks SQL client
 │   │   └── api-connector.js             # Generic HTTP client
 │   ├── core/
-│   │   ├── config.js                    # Configuration management
-│   │   ├── logger.js                    # Winston logger
+│   │   ├── config.js                    # Multi-env configuration
+│   │   ├── logger.js                    # Winston logger (env-aware)
 │   │   └── browser-manager.js           # Browser lifecycle
 │   ├── pages/
 │   │   └── base-page.js                 # Page Object base class
@@ -121,19 +198,19 @@ The orchestrator runs this sequence:
 │   ├── data/                            # Data comparison tests
 │   └── generated/                       # Auto-generated tests
 ├── skills/                              # Copilot skill files
-│   ├── orchestrator.skill.md
-│   ├── jira-agent.skill.md
-│   ├── coding-agent.skill.md
-│   ├── test-cases-agent.skill.md
-│   ├── ui-agent.skill.md
-│   ├── data-comparison-agent.skill.md
-│   ├── test-analysis-agent.skill.md
-│   └── auto-healing-agent.skill.md
-├── reports/                             # Test reports and analysis
+├── reports/                             # Per-env test reports
+│   ├── dev/
+│   ├── uat/
+│   ├── buat/
+│   └── prod/
 ├── locator-snapshots/                   # Snapshots for auto-healing
 ├── playwright.config.js
 ├── package.json
-└── .env.example
+├── .env.example                         # Base template
+├── .env.dev.example                     # Dev environment template
+├── .env.uat.example                     # UAT environment template
+├── .env.buat.example                    # BUAT environment template
+└── .env.prod.example                    # Prod environment template
 ```
 
 ## Individual Agent Usage
@@ -157,14 +234,12 @@ import { DataComparisonAgent } from './src/index.js';
 const agent = new DataComparisonAgent();
 await agent.initConnections({ useSnowflake: true, useDatabricks: true });
 
-// Compare tables
 const result = await agent.compareData(sourceQuery, targetQuery, {
   keyColumns: ['id'],
   compareColumns: ['amount', 'status'],
   tolerance: 0.01,
 });
 
-// Validate calculations
 const calcResult = await agent.validateCalculation(query, 'snowflake', {
   resultColumn: 'total',
   inputColumns: ['quantity', 'unit_price'],
@@ -176,26 +251,19 @@ const calcResult = await agent.validateCalculation(query, 'snowflake', {
 ### Auto Healing Agent
 
 ```bash
-# Take locator snapshots as baseline
 npm run snapshot:locators -- https://your-app.com/login https://your-app.com/dashboard
-
-# Heal and re-run failed tests
 npm run heal
 ```
 
 ### Test Analysis Agent
 
 ```bash
-npm run analyze             # Analyze latest test results
+npm run analyze
 ```
 
 ## Copilot Skill Files
 
-Each agent has a skill file in `skills/` that tells the AI copilot how to use it. Read a skill file to get:
-- What the agent does
-- Available APIs and usage examples
-- When to invoke the agent
-- Configuration needed
+Each agent has a skill file in `skills/` that tells the AI copilot how to use it. Read a skill file to get available APIs, usage examples, when to invoke the agent, and configuration needed.
 
 The `skills/orchestrator.skill.md` file describes the full pipeline and how all agents work together.
 
@@ -203,6 +271,7 @@ The `skills/orchestrator.skill.md` file describes the full pipeline and how all 
 
 | Variable | Description | Required |
 |----------|-------------|----------|
+| `TEST_ENV` | Target environment: `dev`, `uat`, `buat`, `prod` | No (default: dev) |
 | `JIRA_BASE_URL` | Jira instance URL | Yes (for Jira agent) |
 | `JIRA_EMAIL` | Jira account email | Yes (for Jira agent) |
 | `JIRA_API_TOKEN` | Jira API token | Yes (for Jira agent) |
@@ -212,5 +281,7 @@ The `skills/orchestrator.skill.md` file describes the full pipeline and how all 
 | `DATABRICKS_*` | Databricks connection details | Yes (for data agent) |
 | `APP_BASE_URL` | Application URL for UI tests | Yes (for UI tests) |
 | `APP_API_BASE_URL` | API base URL | Yes (for API tests) |
-| `AGENT_MAX_HEAL_ATTEMPTS` | Max healing strategy attempts | No (default: 3) |
-| `AGENT_LOCATOR_SIMILARITY_THRESHOLD` | Min confidence for auto-fix | No (default: 0.7) |
+| `AGENT_LOG_LEVEL` | Override log level | No (per-env default) |
+| `AGENT_MAX_HEAL_ATTEMPTS` | Max healing strategy attempts | No (per-env default) |
+| `AGENT_LOCATOR_SIMILARITY_THRESHOLD` | Min confidence for auto-fix | No (per-env default) |
+| `REPORT_OUTPUT_DIR` | Override report output directory | No (default: reports/{env}) |

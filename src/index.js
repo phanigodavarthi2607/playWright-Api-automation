@@ -13,6 +13,6 @@ export { DatabricksConnector } from './connectors/databricks-connector.js';
 export { ApiConnector } from './connectors/api-connector.js';
 
 export { BasePage } from './pages/base-page.js';
-export { default as config } from './core/config.js';
+export { default as config, VALID_ENVS, ENV } from './core/config.js';
 export { default as logger, createAgentLogger } from './core/logger.js';
 export { BrowserManager } from './core/browser-manager.js';

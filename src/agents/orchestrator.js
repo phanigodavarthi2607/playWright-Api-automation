@@ -26,7 +26,7 @@ export class Orchestrator {
 
   async runFullPipeline(options = {}) {
     const { healOnFailure = true, reportToJira = true, maxHealRetries = 1 } = options;
-    log.info('Starting full automation pipeline');
+    log.info(`Starting full automation pipeline [env=${config.env}]`);
 
     try {
       // Step 1: Fetch stories from Jira
@@ -102,7 +102,7 @@ export class Orchestrator {
   }
 
   async runSingleStory(issueKey, options = {}) {
-    log.info(`Running pipeline for single story: ${issueKey}`);
+    log.info(`Running pipeline for story ${issueKey} [env=${config.env}]`);
 
     const story = await this.jiraAgent.fetchSingleStory(issueKey);
     const files = await this.codingAgent.generateFromStory(story);
@@ -130,7 +130,7 @@ export class Orchestrator {
   }
 
   async runDataComparison(comparisonConfig) {
-    log.info('Running data comparison');
+    log.info(`Running data comparison [env=${config.env}]`);
     await this.dataAgent.initConnections(comparisonConfig.connections);
 
     const results = [];
@@ -161,7 +161,7 @@ export class Orchestrator {
   }
 
   async healAndRerun(testPath) {
-    log.info(`Healing and re-running: ${testPath || 'all tests'}`);
+    log.info(`Healing and re-running [env=${config.env}]: ${testPath || 'all tests'}`);
 
     const firstRun = this._runTests(testPath);
     const analysis = await this.analysisAgent.analyzeResults();

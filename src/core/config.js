@@ -1,13 +1,80 @@
 import dotenv from 'dotenv';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
-
-dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '../..');
 
+const VALID_ENVS = ['dev', 'uat', 'buat', 'prod'];
+
+function resolveEnvironment() {
+  const envName = process.env.TEST_ENV || '';
+
+  const envFile = envName ? `.env.${envName}` : '.env';
+  const envPath = path.join(ROOT_DIR, envFile);
+
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+  } else {
+    dotenv.config({ path: path.join(ROOT_DIR, '.env') });
+  }
+
+  const resolved = process.env.TEST_ENV || 'dev';
+
+  if (!VALID_ENVS.includes(resolved)) {
+    console.warn(
+      `[config] Unknown TEST_ENV="${resolved}". Valid values: ${VALID_ENVS.join(', ')}. Falling back to "dev".`
+    );
+    return 'dev';
+  }
+
+  return resolved;
+}
+
+const ENV = resolveEnvironment();
+
+const ENV_DEFAULTS = {
+  dev: {
+    logLevel: 'debug',
+    maxHealAttempts: 3,
+    locatorSimilarityThreshold: 0.7,
+    playwrightRetries: 1,
+    playwrightWorkers: undefined,
+    playwrightTimeout: 60_000,
+  },
+  uat: {
+    logLevel: 'info',
+    maxHealAttempts: 3,
+    locatorSimilarityThreshold: 0.7,
+    playwrightRetries: 2,
+    playwrightWorkers: 2,
+    playwrightTimeout: 90_000,
+  },
+  buat: {
+    logLevel: 'info',
+    maxHealAttempts: 3,
+    locatorSimilarityThreshold: 0.7,
+    playwrightRetries: 2,
+    playwrightWorkers: 2,
+    playwrightTimeout: 90_000,
+  },
+  prod: {
+    logLevel: 'warn',
+    maxHealAttempts: 1,
+    locatorSimilarityThreshold: 0.9,
+    playwrightRetries: 0,
+    playwrightWorkers: 1,
+    playwrightTimeout: 120_000,
+  },
+};
+
+const defaults = ENV_DEFAULTS[ENV];
+const reportBaseDir = process.env.REPORT_OUTPUT_DIR || path.join(ROOT_DIR, 'reports');
+const reportDir = reportBaseDir.endsWith(ENV) ? reportBaseDir : path.join(reportBaseDir, ENV);
+
 const config = {
+  env: ENV,
   rootDir: ROOT_DIR,
 
   jira: {
@@ -42,21 +109,38 @@ const config = {
   },
 
   agent: {
-    logLevel: process.env.AGENT_LOG_LEVEL || 'info',
-    maxHealAttempts: parseInt(process.env.AGENT_MAX_HEAL_ATTEMPTS || '3', 10),
-    locatorSimilarityThreshold: parseFloat(process.env.AGENT_LOCATOR_SIMILARITY_THRESHOLD || '0.7'),
+    logLevel: process.env.AGENT_LOG_LEVEL || defaults.logLevel,
+    maxHealAttempts: parseInt(process.env.AGENT_MAX_HEAL_ATTEMPTS || String(defaults.maxHealAttempts), 10),
+    locatorSimilarityThreshold: parseFloat(
+      process.env.AGENT_LOCATOR_SIMILARITY_THRESHOLD || String(defaults.locatorSimilarityThreshold)
+    ),
     autoCommitFixes: process.env.AGENT_AUTO_COMMIT_FIXES === 'true',
+  },
+
+  playwright: {
+    retries: defaults.playwrightRetries,
+    workers: defaults.playwrightWorkers,
+    timeout: defaults.playwrightTimeout,
   },
 
   paths: {
     tests: path.join(ROOT_DIR, 'tests'),
     generatedTests: path.join(ROOT_DIR, 'tests/generated'),
-    reports: process.env.REPORT_OUTPUT_DIR || path.join(ROOT_DIR, 'reports'),
+    reports: reportDir,
     locatorSnapshots: path.join(ROOT_DIR, 'locator-snapshots'),
     pages: path.join(ROOT_DIR, 'src/pages'),
     templates: path.join(ROOT_DIR, 'src/templates'),
     skills: path.join(ROOT_DIR, 'skills'),
   },
+
+  isEnv(name) {
+    return ENV === name;
+  },
+
+  isProd() {
+    return ENV === 'prod';
+  },
 };
 
 export default config;
+export { VALID_ENVS, ENV };
