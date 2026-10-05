@@ -1,287 +1,278 @@
 # Agent Playwright Framework
 
-An AI agent-driven test automation framework built on Playwright. Seven specialized agents coordinate through a central orchestrator to deliver end-to-end test automation from Jira stories to executed tests with auto-healing capabilities.
+An enterprise-grade, AI agent-driven test automation framework built on Playwright. Onboard **any project** across your organisation by answering a structured set of questions -- agents generate the complete test setup, including page objects, API stubs, data validations, per-environment configs, and Jira integration.
 
-Supports **multiple environments** (dev, UAT, BUAT, prod) with per-environment configuration, reporting, and tuned agent behavior.
-
-## Architecture
+## How It Works
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                    ORCHESTRATOR                         │
-│         Coordinates the full pipeline per env           │
-└────┬──────┬──────┬──────┬──────┬──────┬──────┬────────┘
-     │      │      │      │      │      │      │
-     ▼      ▼      ▼      ▼      ▼      ▼      ▼
-  ┌──────┐┌──────┐┌──────┐┌────┐┌──────┐┌──────┐┌──────┐
-  │ Jira ││Coding││ Test ││ UI ││ Data ││ Test ││ Auto │
-  │Agent ││Agent ││Cases ││Agt ││Compar││Analy ││ Heal │
-  │      ││      ││Agent ││    ││Agent ││Agent ││Agent │
-  └──┬───┘└──┬───┘└──┬───┘└─┬──┘└──┬───┘└──┬───┘└──┬───┘
-     │       │       │      │      │       │       │
-     ▼       ▼       ▼      ▼      ▼       ▼       ▼
-  ┌──────┐┌──────────────┐┌──────────────┐┌─────────────┐
-  │ Jira ││  Playwright   ││  Snowflake   ││  Locator    │
-  │ API  ││  Browser      ││  Databricks  ││  Snapshots  │
-  └──────┘└──────────────┘└──────────────┘└─────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                   ONBOARDING AGENT                         │
+│   Ask 20 questions about a new project → scaffold it all   │
+└────────────────────────┬──────────────────────────────────┘
+                         │ generates
+                         ▼
+        ┌──────────────────────────────┐
+        │     PROJECT (any app)         │
+        │  project.config.js            │
+        │  .env.dev / .env.uat / .env.prod
+        │  tests/ pages/ reports/       │
+        └────────────────┬─────────────┘
+                         │ runs on
+                         ▼
+┌────────────────────────────────────────────────────────────┐
+│                     ORCHESTRATOR                            │
+│          Coordinates agents per env per project             │
+└──┬───────┬───────┬───────┬───────┬───────┬───────┬────────┘
+   ▼       ▼       ▼       ▼       ▼       ▼       ▼
+ Jira   Coding   Test    UI    Data     Test    Auto
+ Agent  Agent   Cases   Agent  Compare  Analysis Heal
+               Agent                   Agent   Agent
 ```
+
+## Quick Start
+
+### Option A: AI Copilot (recommended)
+
+Tell your Copilot:
+
+> "Set up a new project called Customer Portal. It's a fullstack app with dev, UAT, and prod environments."
+
+The Copilot reads `skills/onboarding-agent.skill.md` and walks you through 20 targeted questions, then generates everything.
+
+### Option B: Interactive CLI
+
+```bash
+npm run init
+```
+
+Launches a terminal wizard that asks the same questions interactively.
+
+### Option C: Programmatic
+
+```javascript
+import { OnboardingAgent } from './src/agents/onboarding-agent/index.js';
+
+const agent = new OnboardingAgent();
+agent.setAnswers({
+  projectName: 'Order System',
+  projectKey: 'order-sys',
+  projectType: 'fullstack',
+  teamName: 'Commerce',
+  environments: ['dev', 'uat', 'buat', 'prod'],
+  devAppUrl: 'https://dev.orders.company.com',
+  uatAppUrl: 'https://uat.orders.company.com',
+  buatAppUrl: 'https://buat.orders.company.com',
+  prodAppUrl: 'https://orders.company.com',
+  authMethod: 'sso',
+  jiraProjectKey: 'ORD',
+  testCategories: ['ui', 'api', 'data-comparison', 'regression', 'smoke'],
+  pages: [
+    { name: 'Login', path: '/login' },
+    { name: 'Dashboard', path: '/dashboard' },
+    { name: 'Order List', path: '/orders' },
+  ],
+  apiEndpoints: [
+    { name: 'List Orders', method: 'GET', path: '/api/orders' },
+    { name: 'Create Order', method: 'POST', path: '/api/orders' },
+  ],
+  dataSources: [{ name: 'Warehouse', type: 'snowflake' }],
+  dataComparisons: [{
+    name: 'Orders source vs target',
+    sourceType: 'snowflake', sourceTable: 'raw.orders',
+    targetType: 'snowflake', targetTable: 'curated.orders',
+    keyColumns: ['order_id'],
+  }],
+});
+
+const { config } = agent.generateProjectConfig();
+await agent.scaffoldProject('./projects/order-sys', config);
+```
+
+## What Gets Generated
+
+For every onboarded project:
+
+```
+projects/order-sys/
+├── project.config.js              # Project manifest (all answers)
+├── playwright.config.js           # Pre-configured for declared browsers & envs
+├── package.json                   # With test:dev, test:uat, orchestrate:prod scripts
+├── .env.dev.example               # Dev credentials template
+├── .env.uat.example               # UAT credentials template
+├── .env.buat.example              # BUAT credentials template
+├── .env.prod.example              # Prod credentials template
+├── .gitignore
+├── src/pages/
+│   ├── login-page.js              # Login page object (if auth configured)
+│   ├── dashboard-page.js          # Page objects for declared pages
+│   └── order-list-page.js
+├── tests/
+│   ├── smoke/smoke.spec.js        # Reachability smoke test
+│   ├── ui/
+│   │   ├── dashboard.spec.js      # UI test stubs per page
+│   │   └── order-list.spec.js
+│   ├── api/endpoints.spec.js      # API test stubs per endpoint
+│   ├── data/validations.spec.js   # Data comparison + calculation tests
+│   ├── regression/
+│   └── e2e/
+├── reports/
+└── locator-snapshots/
+```
+
+## The 20 Questions
+
+The onboarding agent asks these sections (questions are skipped if not applicable):
+
+| # | Section | Key Questions |
+|---|---------|--------------|
+| 1-4 | Project Identity | Name, key, team, description |
+| 5 | Project Type | `web`, `api`, `data`, or `fullstack` |
+| 6-8 | Environments | Which envs, app URLs, API URLs per env |
+| 9-11 | Authentication | Auth method, login path, login selectors |
+| 12-13 | Jira | Project key, auto-field ID |
+| 14-15 | UI Testing | Key pages/flows, browsers (web/fullstack only) |
+| 16 | API Testing | Key endpoints (api/fullstack only) |
+| 17-19 | Data Testing | Data sources, comparisons, calculations (data/fullstack only) |
+| 20 | Test Strategy | Test categories (smoke, regression, e2e, etc.) |
 
 ## Agents
 
 | Agent | Purpose | Skill File |
 |-------|---------|------------|
-| **Jira Agent** | Fetch stories, parse acceptance criteria, report results | `skills/jira-agent.skill.md` |
-| **Coding Agent** | Generate Playwright test code from scenarios | `skills/coding-agent.skill.md` |
-| **Test Cases Agent** | Manage test case registry, sync with Jira | `skills/test-cases-agent.skill.md` |
-| **UI Agent** | Discover page elements, generate page objects | `skills/ui-agent.skill.md` |
-| **Data Comparison Agent** | Compare data across Snowflake/Databricks | `skills/data-comparison-agent.skill.md` |
-| **Test Analysis Agent** | Analyze results, detect flaky tests, recommend fixes | `skills/test-analysis-agent.skill.md` |
-| **Auto Healing Agent** | Fix broken locators when UI changes | `skills/auto-healing-agent.skill.md` |
+| **Onboarding Agent** | Ask questions, generate project setup | `skills/onboarding-agent.skill.md` |
+| **Jira Agent** | Fetch stories, parse AC, report results | `skills/jira-agent.skill.md` |
+| **Coding Agent** | Generate test code from scenarios | `skills/coding-agent.skill.md` |
+| **Test Cases Agent** | Manage test registry, sync Jira | `skills/test-cases-agent.skill.md` |
+| **UI Agent** | Discover elements, generate page objects | `skills/ui-agent.skill.md` |
+| **Data Comparison Agent** | Validate across Snowflake/Databricks | `skills/data-comparison-agent.skill.md` |
+| **Test Analysis Agent** | Analyze results, detect flaky tests | `skills/test-analysis-agent.skill.md` |
+| **Auto Healing Agent** | Fix broken locators automatically | `skills/auto-healing-agent.skill.md` |
 
-## Quick Start
-
-### 1. Install dependencies
-
-```bash
-npm install
-npx playwright install
-```
-
-### 2. Configure environments
+## Multi-Environment Support
 
 ```bash
-# Copy the example files for each environment you need:
-cp .env.dev.example  .env.dev
-cp .env.uat.example  .env.uat
-cp .env.buat.example .env.buat
-cp .env.prod.example .env.prod
-
-# Edit each file with environment-specific credentials and URLs
-```
-
-### 3. Run tests against an environment
-
-```bash
-# Run all tests against a specific environment
+# Run against any environment
 npm run test:dev
 npm run test:uat
 npm run test:buat
 npm run test:prod
 
-# Or set TEST_ENV inline
-TEST_ENV=uat npx playwright test
+# Environment-specific test types
+npm run test:uat:ui
+npm run test:prod:api
+npm run test:dev:data
+
+# Full pipeline per environment
+npm run orchestrate:dev
+npm run orchestrate:uat
+npm run orchestrate:prod
 ```
-
-### 4. Run the full pipeline per environment
-
-```bash
-npm run orchestrate:dev     # Full pipeline against dev
-npm run orchestrate:uat     # Full pipeline against UAT
-npm run orchestrate:buat    # Full pipeline against BUAT
-npm run orchestrate:prod    # Full pipeline against prod
-```
-
-## Multi-Environment Support
-
-### How it works
-
-Set the `TEST_ENV` variable to select an environment. The framework:
-
-1. Loads `.env.{TEST_ENV}` (e.g., `.env.uat`), falling back to `.env` if the file is missing.
-2. Applies per-environment defaults for log level, retries, workers, timeouts, and agent thresholds.
-3. Writes reports to a per-environment subdirectory (`reports/uat/`, `reports/prod/`, etc.).
-4. Includes the environment name in every log line and in Playwright report metadata.
-
-### Environment-specific defaults
 
 | Setting | dev | uat | buat | prod |
 |---------|-----|-----|------|------|
 | Log level | debug | info | info | warn |
-| Playwright retries | 1 | 2 | 2 | 0 |
-| Playwright workers | auto | 2 | 2 | 1 |
-| Test timeout | 60s | 90s | 90s | 120s |
-| Heal attempts | 3 | 3 | 3 | 1 |
-| Locator similarity threshold | 0.7 | 0.7 | 0.7 | 0.9 |
-| Trace capture | on-first-retry | on-first-retry | on-first-retry | off |
-| Video capture | retain-on-failure | retain-on-failure | retain-on-failure | off |
+| Retries | 1 | 2 | 2 | 0 |
+| Workers | auto | 2 | 2 | 1 |
+| Timeout | 60s | 90s | 90s | 120s |
+| Trace/video | on | on | on | off |
 
-Any of these can be overridden per-environment in the `.env.{env}` file.
+## Enterprise Features
 
-### Per-environment npm scripts
+### Organisation Standards
 
-```bash
-# Test suites
-npm run test:dev            # All tests against dev
-npm run test:uat:ui         # UI tests against UAT
-npm run test:buat:api       # API tests against BUAT
-npm run test:prod:data      # Data tests against prod
+Create `enterprise.config.js` (copy from `enterprise.config.example.js`) to enforce:
 
-# Orchestration pipeline
-npm run orchestrate:dev
-npm run orchestrate:uat
-npm run orchestrate:buat
-npm run orchestrate:prod
+- Mandatory browsers and test categories across all projects
+- Required environments every project must have
+- Naming conventions for test files and page objects
+- Shared data source definitions
+- Centralized reporting settings
+
+### Project Registry
+
+Every onboarded project is tracked in `enterprise-registry.json`:
+
+```javascript
+import { EnterpriseManager } from './src/enterprise/manager.js';
+
+const enterprise = new EnterpriseManager('.');
+await enterprise.loadRegistry();
+
+enterprise.getAllTeams();                     // ['Platform', 'Data', 'QA']
+enterprise.getProjectsByTeam('Platform');     // [{ key: 'cust-portal', ... }]
+await enterprise.generateCrossProjectReport(); // org-wide summary
 ```
 
-### Reports
+### Standards Compliance Check
 
-Reports are separated by environment:
-
-```
-reports/
-  dev/
-    results.json
-    html/
-    agent.log
-  uat/
-    results.json
-    html/
-    agent.log
-  prod/
-    ...
-```
-
-### CI Example
-
-```yaml
-jobs:
-  test:
-    strategy:
-      matrix:
-        env: [dev, uat, buat]
-    steps:
-      - run: TEST_ENV=${{ matrix.env }} npm test
+```javascript
+const compliance = enterprise.validateAgainstStandards(projectConfig);
+if (!compliance.compliant) {
+  console.log('Violations:', compliance.violations);
+}
 ```
 
 ## Pipeline Workflow
 
-The orchestrator runs this sequence:
+The orchestrator runs this sequence per project per environment:
 
-1. **Jira Fetch** - Fetches stories where the automation custom field = "Yes"
-2. **Test Case Sync** - Registers test cases in the local registry
-3. **Code Generation** - Generates Playwright test files from acceptance criteria
-4. **Test Execution** - Runs generated tests via Playwright
-5. **Analysis** - Parses results, categorizes failures, detects flaky tests
-6. **Auto Healing** - Fixes broken locators if locator failures are found
-7. **Reporting** - Posts results back to Jira as comments
+1. **Jira Fetch** - Stories where auto field = "Yes"
+2. **Test Case Sync** - Register in local registry
+3. **Code Generation** - Generate Playwright test files
+4. **Test Execution** - Run via Playwright
+5. **Analysis** - Categorize failures, detect flaky tests
+6. **Auto Healing** - Fix broken locators
+7. **Jira Reporting** - Post results back
 
 ## Project Structure
 
 ```
+agent-playwright-framework/              # The framework (shared across org)
 ├── src/
 │   ├── agents/
+│   │   ├── onboarding-agent/            # Project onboarding wizard
+│   │   │   ├── index.js                 # Question set + scaffolder
+│   │   │   └── cli.js                   # Interactive CLI
 │   │   ├── orchestrator.js              # Central coordinator
-│   │   ├── jira-agent/index.js          # Jira integration
-│   │   ├── coding-agent/index.js        # Test code generator
-│   │   ├── test-cases-agent/index.js    # Test case management
-│   │   ├── ui-agent/index.js            # UI discovery & page objects
-│   │   ├── data-comparison-agent/index.js  # Data validation
-│   │   ├── test-analysis-agent/index.js # Results analysis
+│   │   ├── jira-agent/                  # Jira integration
+│   │   ├── coding-agent/                # Code generation
+│   │   ├── test-cases-agent/            # Test case management
+│   │   ├── ui-agent/                    # UI discovery
+│   │   ├── data-comparison-agent/       # Data validation
+│   │   ├── test-analysis-agent/         # Results analysis
 │   │   └── auto-healing-agent/          # Locator auto-fix
-│   │       ├── index.js
-│   │       └── snapshot.js
-│   ├── connectors/
-│   │   ├── jira-connector.js            # Jira REST API client
-│   │   ├── snowflake-connector.js       # Snowflake SQL client
-│   │   ├── databricks-connector.js      # Databricks SQL client
-│   │   └── api-connector.js             # Generic HTTP client
+│   ├── connectors/                      # Jira, Snowflake, Databricks, API
 │   ├── core/
 │   │   ├── config.js                    # Multi-env configuration
-│   │   ├── logger.js                    # Winston logger (env-aware)
-│   │   └── browser-manager.js           # Browser lifecycle
-│   ├── pages/
-│   │   └── base-page.js                 # Page Object base class
+│   │   ├── project-config-schema.js     # Project config schema + validator
+│   │   └── logger.js                    # Env-aware logging
+│   ├── enterprise/
+│   │   └── manager.js                   # Org standards + project registry
+│   ├── pages/base-page.js              # Page Object base class
 │   └── index.js                         # All exports
-├── tests/
-│   ├── ui/                              # UI test specs
-│   ├── api/                             # API test specs
-│   ├── data/                            # Data comparison tests
-│   └── generated/                       # Auto-generated tests
-├── skills/                              # Copilot skill files
-├── reports/                             # Per-env test reports
-│   ├── dev/
-│   ├── uat/
-│   ├── buat/
-│   └── prod/
-├── locator-snapshots/                   # Snapshots for auto-healing
-├── playwright.config.js
-├── package.json
-├── .env.example                         # Base template
-├── .env.dev.example                     # Dev environment template
-├── .env.uat.example                     # UAT environment template
-├── .env.buat.example                    # BUAT environment template
-└── .env.prod.example                    # Prod environment template
+├── skills/                              # Copilot skill files (8 agents)
+├── enterprise.config.example.js         # Org config template
+├── projects/                            # Onboarded project workspaces
+│   ├── cust-portal/
+│   ├── order-sys/
+│   └── dwh-etl/
+└── tests/                               # Framework-level tests
 ```
-
-## Individual Agent Usage
-
-### Jira Agent
-
-```bash
-npm run jira:fetch          # Export automatable stories to JSON
-```
-
-```javascript
-import { JiraAgent } from './src/index.js';
-const agent = new JiraAgent();
-const story = await agent.fetchSingleStory('PROJ-123');
-```
-
-### Data Comparison Agent
-
-```javascript
-import { DataComparisonAgent } from './src/index.js';
-const agent = new DataComparisonAgent();
-await agent.initConnections({ useSnowflake: true, useDatabricks: true });
-
-const result = await agent.compareData(sourceQuery, targetQuery, {
-  keyColumns: ['id'],
-  compareColumns: ['amount', 'status'],
-  tolerance: 0.01,
-});
-
-const calcResult = await agent.validateCalculation(query, 'snowflake', {
-  resultColumn: 'total',
-  inputColumns: ['quantity', 'unit_price'],
-  formula: ([qty, price]) => qty * price,
-  tolerance: 0.01,
-});
-```
-
-### Auto Healing Agent
-
-```bash
-npm run snapshot:locators -- https://your-app.com/login https://your-app.com/dashboard
-npm run heal
-```
-
-### Test Analysis Agent
-
-```bash
-npm run analyze
-```
-
-## Copilot Skill Files
-
-Each agent has a skill file in `skills/` that tells the AI copilot how to use it. Read a skill file to get available APIs, usage examples, when to invoke the agent, and configuration needed.
-
-The `skills/orchestrator.skill.md` file describes the full pipeline and how all agents work together.
 
 ## Configuration Reference
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TEST_ENV` | Target environment: `dev`, `uat`, `buat`, `prod` | No (default: dev) |
-| `JIRA_BASE_URL` | Jira instance URL | Yes (for Jira agent) |
-| `JIRA_EMAIL` | Jira account email | Yes (for Jira agent) |
-| `JIRA_API_TOKEN` | Jira API token | Yes (for Jira agent) |
-| `JIRA_PROJECT_KEY` | Jira project key | Yes (for Jira agent) |
-| `JIRA_AUTO_FIELD` | Custom field for automation flag | No (default: customfield_10100) |
-| `SNOWFLAKE_*` | Snowflake connection details | Yes (for data agent) |
-| `DATABRICKS_*` | Databricks connection details | Yes (for data agent) |
-| `APP_BASE_URL` | Application URL for UI tests | Yes (for UI tests) |
-| `APP_API_BASE_URL` | API base URL | Yes (for API tests) |
-| `AGENT_LOG_LEVEL` | Override log level | No (per-env default) |
-| `AGENT_MAX_HEAL_ATTEMPTS` | Max healing strategy attempts | No (per-env default) |
-| `AGENT_LOCATOR_SIMILARITY_THRESHOLD` | Min confidence for auto-fix | No (per-env default) |
-| `REPORT_OUTPUT_DIR` | Override report output directory | No (default: reports/{env}) |
+| Variable | Description |
+|----------|-------------|
+| `TEST_ENV` | Target environment: `dev`, `uat`, `buat`, `prod` |
+| `JIRA_BASE_URL` | Jira instance URL |
+| `JIRA_EMAIL` | Jira account email |
+| `JIRA_API_TOKEN` | Jira API token |
+| `JIRA_PROJECT_KEY` | Jira project key |
+| `JIRA_AUTO_FIELD` | Custom field ID for automation flag |
+| `SNOWFLAKE_*` | Snowflake connection details |
+| `DATABRICKS_*` | Databricks connection details |
+| `APP_BASE_URL` | Application URL |
+| `APP_API_BASE_URL` | API base URL |
+| `AGENT_LOG_LEVEL` | Override log level |
+| `AGENT_MAX_HEAL_ATTEMPTS` | Healing strategy attempts |
+| `AGENT_LOCATOR_SIMILARITY_THRESHOLD` | Min confidence for auto-fix |

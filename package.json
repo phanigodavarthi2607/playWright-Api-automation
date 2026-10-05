@@ -1,10 +1,16 @@
 {
   "name": "agent-playwright-framework",
   "version": "1.0.0",
-  "description": "AI Agent-driven Playwright test automation framework with Jira integration, auto-healing, and multi-platform data validation",
+  "description": "Enterprise AI Agent-driven Playwright test automation framework — onboard any project via question-driven setup",
   "main": "src/index.js",
   "type": "module",
+  "bin": {
+    "agent-pw-init": "src/agents/onboarding-agent/cli.js"
+  },
   "scripts": {
+    "init": "node src/agents/onboarding-agent/cli.js",
+    "init:project": "node src/agents/onboarding-agent/cli.js",
+
     "test": "npx playwright test",
     "test:ui": "npx playwright test tests/ui/",
     "test:api": "npx playwright test tests/api/",
