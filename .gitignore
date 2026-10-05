@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.dev
+.env.uat
+.env.buat
+.env.prod
+reports/
+locator-snapshots/*.json
+tests/generated/*.spec.js
+!tests/generated/.gitkeep
+*.log
+.DS_Store
+test-results/
+playwright-report/

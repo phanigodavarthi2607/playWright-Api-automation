@@ -1,0 +1,74 @@
+{
+  "name": "agent-playwright-framework",
+  "version": "1.0.0",
+  "description": "Enterprise AI Agent-driven Playwright test automation framework — onboard any project via question-driven setup",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "agent-pw-init": "src/agents/onboarding-agent/cli.js"
+  },
+  "scripts": {
+    "init": "node src/agents/onboarding-agent/cli.js",
+    "init:project": "node src/agents/onboarding-agent/cli.js",
+
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test tests/ui/",
+    "test:api": "npx playwright test tests/api/",
+    "test:data": "npx playwright test tests/data/",
+    "test:generated": "npx playwright test tests/generated/",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+
+    "test:dev": "TEST_ENV=dev npx playwright test",
+    "test:uat": "TEST_ENV=uat npx playwright test",
+    "test:buat": "TEST_ENV=buat npx playwright test",
+    "test:prod": "TEST_ENV=prod npx playwright test",
+
+    "test:dev:ui": "TEST_ENV=dev npx playwright test tests/ui/",
+    "test:uat:ui": "TEST_ENV=uat npx playwright test tests/ui/",
+    "test:buat:ui": "TEST_ENV=buat npx playwright test tests/ui/",
+    "test:prod:ui": "TEST_ENV=prod npx playwright test tests/ui/",
+
+    "test:dev:api": "TEST_ENV=dev npx playwright test tests/api/",
+    "test:uat:api": "TEST_ENV=uat npx playwright test tests/api/",
+    "test:buat:api": "TEST_ENV=buat npx playwright test tests/api/",
+    "test:prod:api": "TEST_ENV=prod npx playwright test tests/api/",
+
+    "test:dev:data": "TEST_ENV=dev npx playwright test tests/data/",
+    "test:uat:data": "TEST_ENV=uat npx playwright test tests/data/",
+    "test:buat:data": "TEST_ENV=buat npx playwright test tests/data/",
+    "test:prod:data": "TEST_ENV=prod npx playwright test tests/data/",
+
+    "report": "npx playwright show-report reports/html",
+
+    "orchestrate": "node src/agents/orchestrator.js",
+    "orchestrate:dev": "TEST_ENV=dev node src/agents/orchestrator.js",
+    "orchestrate:uat": "TEST_ENV=uat node src/agents/orchestrator.js",
+    "orchestrate:buat": "TEST_ENV=buat node src/agents/orchestrator.js",
+    "orchestrate:prod": "TEST_ENV=prod node src/agents/orchestrator.js",
+
+    "jira:fetch": "node src/agents/jira-agent/index.js",
+    "jira:sync": "node src/agents/test-cases-agent/index.js",
+    "generate:tests": "node src/agents/coding-agent/index.js",
+    "analyze": "node src/agents/test-analysis-agent/index.js",
+    "heal": "node src/agents/auto-healing-agent/index.js",
+    "compare:data": "node src/agents/data-comparison-agent/index.js",
+    "snapshot:locators": "node src/agents/auto-healing-agent/snapshot.js"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.48.0",
+    "axios": "^1.7.0",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.4.0",
+    "snowflake-sdk": "^1.11.0",
+    "databricks-sql-nodejs": "^1.8.0",
+    "winston": "^3.14.0",
+    "handlebars": "^4.7.8",
+    "diff": "^7.0.0",
+    "csv-parse": "^5.5.0",
+    "json-diff": "^1.0.6"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  }
+}
